@@ -1,8 +1,6 @@
 const withMDX = require("@next/mdx")({
     extension: /\.mdx?$/,
     options: {
-        // Disable MDX createElement hack
-        // because we don't need rendering custom elements
         jsx: true,
     },
 });
@@ -26,21 +24,42 @@ function pipe(value, ...callbacks) {
 
 module.exports = pipe(
     /** @type {import('next').NextConfig} */ ({
-        // 👇👇👇 这里是我为你新增的代码开始 👇👇👇
+        // 👇 1. 之前加的忽略规则（保持不变）
         eslint: {
             ignoreDuringBuilds: true,
         },
         typescript: {
             ignoreBuildErrors: true,
         },
-        // 👆👆👆 这里是我为你新增的代码结束 👆👆👆
+
+        // 👇 2. ⚠️ 这次新增的关键配置：告诉 Vercel 编译这些关联包 ⚠️
+        transpilePackages: [
+            "@yume-chan/adb",
+            "@yume-chan/adb-credential-web",
+            "@yume-chan/adb-daemon-direct-sockets",
+            "@yume-chan/adb-daemon-webusb",
+            "@yume-chan/adb-daemon-ws",
+            "@yume-chan/adb-scrcpy",
+            "@yume-chan/android-bin",
+            "@yume-chan/aoa",
+            "@yume-chan/b-tree",
+            "@yume-chan/event",
+            "@yume-chan/fetch-scrcpy-server",
+            "@yume-chan/pcm-player",
+            "@yume-chan/scrcpy",
+            "@yume-chan/scrcpy-decoder-tinyh264",
+            "@yume-chan/scrcpy-decoder-webcodecs",
+            "@yume-chan/stream-extra",
+            "@yume-chan/struct",
+            "@yume-chan/tabby-launcher",
+            "@yume-chan/undici-browser",
+        ],
 
         basePath,
         pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
         reactStrictMode: false,
         productionBrowserSourceMaps: true,
         experimental: {
-            // Workaround https://github.com/vercel/next.js/issues/33914
             esmExternals: "loose",
         },
         publicRuntimeConfig: {
@@ -49,20 +68,12 @@ module.exports = pipe(
         webpack(config) {
             config.module.rules.push({
                 test: /.*\.m?js$/,
-                // disable these modules because they generate a lot of warnings about
-                // non existing source maps
-                // we cannot filter these warnings via config.stats.warningsFilter
-                // because Next.js doesn't allow it
-                // https://github.com/vercel/next.js/pull/7550#issuecomment-512861158
-                // https://github.com/vercel/next.js/issues/12861
                 exclude: [/next/],
                 use: ["source-map-loader"],
                 enforce: "pre",
             });
-
             return config;
         },
-        // Enable Direct Sockets API
         async headers() {
             return [
                 {
